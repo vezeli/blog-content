@@ -4,7 +4,9 @@ require(`dotenv`).config({
 
 module.exports = {
   siteMetadata: {
-    siteTitleAlt: `Minimal Blog - Gatsby Theme`,
+    siteTitle: `@fiddlecorner`,
+    siteTitleAlt: `Velibor Želi - Busy with PhD studies & software developing`,
+    author: `@fiddlecorner`,
   },
   plugins: [
     {
@@ -23,12 +25,12 @@ module.exports = {
         ],
         externalLinks: [
           {
-            name: `Twitter`,
-            url: `https://twitter.com/lekoarts_de`,
+            name: `GitHub`,
+            url: `https://github.com/vezeli`,
           },
           {
-            name: `Instagram`,
-            url: `https://www.instagram.com/lekoarts.de/`,
+            name: `Twitter`,
+            url: `https://twitter.com/fiddlecorner`,
           },
         ],
       },
