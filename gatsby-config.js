@@ -25,12 +25,12 @@ module.exports = {
         ],
         externalLinks: [
           {
-            name: `LinkedIn`,
-            url: `https://www.linkedin.com/in/velibor-zeli/`,
-          },
-          {
             name: `GitHub`,
             url: `https://github.com/tinkersavenue`,
+          },
+          {
+            name: `LinkedIn`,
+            url: `https://www.linkedin.com/in/velibor-zeli/`,
           },
         ],
       },
