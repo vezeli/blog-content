@@ -4,9 +4,9 @@ require(`dotenv`).config({
 
 module.exports = {
   siteMetadata: {
-    siteTitle: `@fiddlecorner`,
+    siteTitle: `@tinkersavenue`,
     siteTitleAlt: `Velibor Želi - Busy with PhD studies & software developing`,
-    author: `@fiddlecorner`,
+    author: `@tinkersavenue`,
   },
   plugins: [
     {
@@ -30,7 +30,7 @@ module.exports = {
           },
           {
             name: `GitHub`,
-            url: `https://github.com/vezeli`,
+            url: `https://github.com/tinkersavenue`,
           },
         ],
       },
