@@ -1,0 +1,265 @@
+---
+title: Object-oriented Programming Using First-Class Functions in Python
+date: 2020-05-11
+tags:
+  - Python
+  - Functional programming
+---
+
+When talking about design patterns object-oriented programming (OOP) and
+functional programming (FP) are considered to be the opposites. FP is
+characterised by lack of state and immutable data structures while OOP is
+written using mutable data structures that represent state in programs. This
+doesn't mean, however, that one cannot use FP to create "data holders" that
+resemble objects in OOP (as we will show).
+
+Even though Python is optimized for writing imperative programs (i.e., OOP) it
+works fairly well for FP. It is mainly because Python supports the concept of
+first-class functions. This allows Pythonistas and Pythoneers to treat
+functions (with love and gratitude that they deserve) as if they are any other
+object in Python. This post shows how to write functional Python using
+first-class functions to bridge the gap between the FP and OOP. To have a
+better understanding first we need to take a look at first-class functions and
+lexical closure.
+
+### Functions in Python are first-class citizens
+
+Support of first-class functions means that functions in Python behave like any
+other object. They can be passed as functional arguments or returned from other
+functions. Here's an example of a first-class function:
+
+```py
+def first_class_function(arg):
+    def enclosed_function():
+        return arg
+    return enclosed_function
+```
+
+Every time `first_class_function` gets called it defines a new
+`enclosed_function` as it's return value. Since `first_class_function` returns
+another function it really is first class.
+
+Note that `arg` and `enclosed_function` live only inside the namescope of
+`first_class_function`. This means that the two objects can only be used inside
+our `first_class_function`! Since these objects coexist in the same namespace
+it also means that `enclosed_function` knows what is `arg` and can use it
+inside it's own function namescope, this is called *lexical closure*. Lexical
+closures capture the local state of functions and represent the ABC of
+functional programming.
+
+To call `enclosed_function` you have to first call `first_class_function` and
+pass in an argument. This creates a lexical closure and returns a function
+object called `enclosed_function`. The returned function object can be directly
+called with no arguments:
+
+```py noLineNumbers
+>>> first_class_function("bar")()
+'bar'
+```
+
+Otherwise, it can be assigned to a variable and called later:
+
+```py noLineNumbers
+>>> foo = first_class_function("bar")
+>>> foo()
+'bar'
+```
+
+In the second example, note that `foo` is a function returned from
+`first_class_function`. It is important to realize that the argument `"bar"`
+passed in `first_class_function` now lives inside `foo`. This means that
+lexical closures can be used for storing objects inside functions. Object `foo`
+behaves like any other (non-anonymous) function in Python, although keep in
+mind that it was created without the explicit use of `def` keyword!  Finally,
+we can call `foo` without arguments and return the value it is storing inside
+the closure.
+
+Lexical closures are a powerful concept in FP that is commonly used in Python
+for writing function decorators. For a more detailed introduction to
+first-class functions head to [Dan's
+post](https://dbader.org/blog/python-first-class-functions) where this topic is
+addressed in a structured pedagogic way.
+
+### Using first-class functions for storing states
+
+Let's see how class instances store state inside objects. We will build a class
+called `RoseFlower` which keeps information about height of a rose flower in
+centimeters. This class has two instance methods: `measure` which allows us to
+measure flower's height and `water` which allows us to water our beautiful rose
+flower. However, there is a limit to how tall a rose flower can grow. After the
+flower reaches that limit it stops growing. Here is the code[^1]:
+
+```py
+class RoseFlower:
+    def __init__(self, height):
+        self.height = height
+
+    def measure(self):
+        return self.height
+
+    def water(self, water_cups):
+        if (height := self.height + water_cups*0.25) <= (max_height := 50.0):
+            self.height = height
+        else:
+            self.height = max_height
+```
+
+Now, we can create a single rose flower instance and store flower's height
+inside it. We can also measure the flower's height using the `measure` method:
+
+```py noLineNumbers
+>>> red_rose = RoseFlower(12.5)
+>>> red_rose.measure()
+12.5
+```
+
+Otherwise, we can give it one cup of water so that it grows: 
+
+```py noLineNumbers
+>>> red_rose.water(1)
+>>> red_rose.measure()
+12.75
+```
+
+Every time we call `water` method our instance mutates and it's height
+attribute changes. If we call `water` method several times the value of the
+height attribute increases but the instance keeps the same reference in memory.
+Let's take a look at the following example[^2]:
+
+```py noLineNumbers
+>>> white_rose = RoseFlower(16.1)
+>>> id(white_rose)
+140559360210736
+>>> white_rose.water(1)
+>>> id(white_rose)
+140559360210736
+```
+
+Although this is a simple example of OOP it sums up the process of storing
+state inside an object and mutating it.
+
+Using first-class functions and lexical closures we can replicate the behaviour
+of `RoseFlower` class. Let's take a look at how we can apply FP concepts for
+the same problem. We will decorate our garden by building a new flower type
+called `TulipFlower`:
+
+```py
+def TulipFlower(height):
+    def constructor():
+        return height
+    return constructor
+```
+
+Notice that `TulipFlower` has the same code as the `first_class_function` that
+we've used previously. To create an instance of `TulipFlower` we can use the
+following:
+
+```py noLineNumbers
+>>> orange_tulip = TulipFlower(21.05)
+>>> pink_tulip = TulipFlower(10.25)
+```
+
+Because of the lexical closure function objects `pink_tulip` and `orange_tulip`
+store the `height` argument that was passed to `TulipFlower`. Namely, we use
+`constructor` to "memorize" the value of `height`.
+
+We would also like to access the value stored inside our new instance. Instead
+of being lazy and calling tulip objects without arguments to return their
+height let's build a simple function called `measure` that does that:
+
+```py noLineNumbers
+def measure(tulip):
+     return tulip()
+
+>>> measure(orange_tulip)
+21.05
+>>> measure(pink_tulip)
+10.25
+```
+
+At this point we can create other functions that will work with tulip objects.
+Let's make a function which allows us to interact with our beautiful tulips. We
+will water them and they will grow, but since they are tulips we know that they
+cannot grow above a certain height. Here is the code[^1]: 
+
+```py
+def water(tulip, water_cups):
+    if (height := measure(tulip) + water_cups*0.25) <= (max_height := 50.0):
+        return TulipFlower(height)
+    else:
+        return TulipFlower(max_height)
+```
+
+Now, let's use `water` function to water our lovely `pink_tulip` with one cup
+of water at a time:
+
+```py noLineNumbers
+>>> pink_tulip_after_1cup = water(pink_tulip, 1)
+>>> pink_tulip_after_2cup = water(pink_tulip_after_1cup, 1)
+>>> pink_tulip_after_3cup = water(pink_tulip_after_2cup, 1)
+>>> pink_tulip_after_4cup = water(pink_tulip_after_3cup, 1)
+>>> measure(pink_tulip_after_4cup)
+11.25
+```
+
+Here you see prototype-based OOP in action! Every time we apply `water`
+function it returns a new instance of a tulip flower. This is referred to as
+the so-called *prototype-base OOP* (a well-known concept to JavaScript
+programmers). It means that every time `water` is called the function takes a
+prototype object and modifies it in order to create a new instance. We can
+check this with the `id` function:
+
+```py noLineNumbers
+>>> id(pink_tulip)
+140559358724704
+>>> id(pink_tulip_after_1cup)
+140559341576048
+```
+
+We are certain that `water` function is returning a new object every time it is
+called because `pink_tulip` and `pink_tulip_after_1cup` are not the same object.
+Notice that cloning an object and modifying it to create a new object is a
+natural result of using FP.
+
+You might think that calling a function several times and naming it is tedious
+but it is actually preferred because it protects us from having state
+variables. This is the reasons why it is easier to keep track of *the flow*
+rather than *the state* in asynchronous programs. We can rewrite the above code
+in a compact way using Python's support for FP located inside the `functools`
+module:
+
+```py noLineNumbers
+>>> from functools import reduce
+>>> pink_tulip_after_4cup_compact = reduce(water, (1,1,1,1), pink_tulip)
+>>> measure(pink_tulip_after_4cup_compact)
+11.25
+```
+
+In this example we've used the powerful
+[`functools.reduce`](https://docs.python.org/3/library/functools.html#functools.reduce)
+function to call make recursive function calls.
+
+### Conclusion
+
+We have introduced the concept of first-class functions and showed that Python
+has such support. Without lexical closures it would be impossible to do FP
+because we wouldn't be able to "memorize" information and store it inside
+functions.
+
+We have implemented a class called `RoseFlower` using the classical OOP
+approach. The example was used to demonstrate how state is stored inside
+objects in OOP and how the objects mutate. Later, we considered the same
+problem by taking the FP approach. We've implemented a function called
+`TulipFlower` and seen that we can use it to create objects and store
+information in them. However, using the FP approach there was no object
+mutation and our functions were pure.
+
+I hope that this excesses at least convinced you that OOP and FP are more
+similar than you thought and (fingers crossed) that it your sparked interest
+for further exploration of the dazzling world of FP.
+
+[^1]: Because we're using the walrus operator (`:=`) this code block is
+supported only in Python >= 3.8.
+
+[^2]: The `id` function will most likely have a different return value in your
+Python interpreter.
