@@ -225,19 +225,25 @@ You might think that calling a function several times and naming it is tedious
 but it is actually preferred because it protects us from having state
 variables. This is the reasons why it is easier to keep track of *the flow*
 rather than *the state* in asynchronous programs. We can rewrite the above code
-in a compact way using Python's support for FP located inside the `functools`
-module:
+in a compact way using Python's support for FP located inside the
+[`functools`](https://docs.python.org/3/library/functools.html) module:
 
 ```py noLineNumbers
 >>> from functools import reduce
->>> pink_tulip_after_4cup_compact = reduce(water, (1,1,1,1), pink_tulip)
->>> measure(pink_tulip_after_4cup_compact)
+>>> pink_tulip_after_4cup = reduce(water, (1,1,1,1), pink_tulip)
+>>> measure(pink_tulip_after_4cup)
 11.25
 ```
 
-In this example we've used the powerful
-[`functools.reduce`](https://docs.python.org/3/library/functools.html#functools.reduce)
-function to call make recursive function calls.
+This is equivalent to:
+
+```py noLineNumbers
+>>> pink_tulip_after_4cup = water(water(water(water(pink_tulip, 1), 1), 1), 1)
+>>> measure(pink_tulip_after_4cup)
+11.25
+```
+
+As you can see `reduce` is a valuable tool in the world of FP.
 
 ### Conclusion
 
