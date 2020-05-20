@@ -1,6 +1,6 @@
 ---
 title: "Revisiting the Mechanism Behind the `for` Statement"
-date: 2020-05-20
+date: 2020-05-21
 tags: 
   - Python
 ---
@@ -11,12 +11,37 @@ makes heavy use of the flow control statements. One of the flow control
 statements is the `for` statement which is commonly used for iterating over a
 certain part of code until a condition is met.
 
-The `for` statement has been adapted to improve readability. It should be noted
-that Python's `for` loop is actually what is known as the [foreach
-loop](https://en.wikipedia.org/wiki/Foreach_loop). This removes the noise of
-referring to objects with indexes from the body of a loop and makes code
-cleaner. In the same time it gives a more intuitive iteration experience since
-the code can be read as pseudo code. Let's consider the following example:
+Tip: This article focuses on the mechanism that runs the `for` statement and
+provides only the bare minima of information about different terms that we will
+come across, such as iterables and iterators. If at any point you feel that you
+would like to learn more about these I'd recommend starting with [Tray's
+post](https://treyhunner.com/2016/12/python-iterator-protocol-how-for-loops-work/)
+it's really nice!
+
+### Common Usage
+
+A common anti-pattern is to use the `for` statement together with `range` and
+`len` functions to iterate over objects using indexes. Here's an example:
+
+```py noLineNumbers
+>>> numbers = "42"
+>>> for i in range(len(numbers)):
+...     print(numbers[i])
+...
+4
+2
+```
+
+Even though retrieving items from a sequence performs as O(1), this way of
+iterating over objects is considered a bad practice. It indicates that the
+programmer has a strong accent carried over from another programming language.
+
+Instead, the `for` statement is aimed to improve readability. It provides a
+framework for iterating over *iterable* objects (any object whose class
+implements `__iter__` or `__getitem__`) one element at the time. Namely, in the
+previous example we iterate over a range-type object that has both dunder
+methods implemented by default. Let's rewrite the previous code block in a
+Pythonic way:
 
 ```py noLineNumbers
 >>> numbers = "42"
@@ -27,17 +52,27 @@ the code can be read as pseudo code. Let's consider the following example:
 2
 ```
 
-The `for` statement provides a framework for iterating over any *iterable*
-object (any object whose class implements `__iter__` or `__getitem__`) one
-element at the time. Namely, in this case we iterate over `numbers` which is
-actually a string object. Instead of referring to objects with indexes Python
-defines a new variable `number` which gets updated in every iteration. The new
-variable behaves like any other variable in Python so be careful not to clobber
-another variable with the same name.
+Now this is much better! Notice that Python's `for` loop is actually what is
+known as the [foreach loop](https://en.wikipedia.org/wiki/Foreach_loop) and it
+removes the noise of referring to an object with indexes making the code
+cleaner. At the same time it gives a more intuitive iteration experience since
+the code can be read as pseudo code. Instead of referring to an object with
+indexes Python defines a new variable `number` which gets updated in every
+iteration. The new variable behaves like any other variable in Python and is
+not bounded to the namespace of the loop (meaning that the variable exists even
+after the loop is over). Therefore, be careful not to clobber another variable
+with the same name.
 
-The `for` statement actually represents syntactic sugar which removes the
-complexity of the iteration mechanism. Desugarizing the previous example
-exposes the underlying algorithm:
+Additionally, mutating an object while iterating over it is not recommended and
+can lead to nasty bugs. There are a dozen of ways to mutate an object. However,
+without accessing indexes the beginner programmers are discouraged from this
+idea.
+
+### Mechanism Behind the `for` Statement
+
+The `for` statement is actually syntactic sugar that represents an interface
+for interacting with iterable and iterator objects. Desugarizing the previous
+example exposes the underlying mechanism:
 
 ```py noLineNumbers
 >>> numbers = "42"
@@ -54,7 +89,7 @@ exposes the underlying algorithm:
 ```
 
 Behind the scenes Python takes the object passed in the `for` statement and
-calls `iter` built-in funciton on it. If the object is iterable `iter` returns
+calls `iter` built-in function on it. If the object is iterable `iter` returns
 an iterator (an object with `__next__` method and `__iter__` method that
 returns `self`) otherwise it returns `TypeError`. Afterwards, the iterator is
 passed as an argument to the `next` built-in function returning one value at
@@ -62,7 +97,15 @@ the time until the iterator is exhausted at which point it raises the
 `StopIteration` exception and breaks out of the loop (see
 [documentation](https://docs.python.org/3/tutorial/classes.html#iterators)).
 
-This underlying mechanism for the `for` statement allows Python to iterate over
-any object `obj` that implements `__iter__` or `__getitem__` method. In other
-word, as long as `iter(obj)` returns an valid iterator (with `__next__` method
-and `__iter__` method that returns `self`) Python is able to loop over `obj`.
+In the previous examples, we've seen that we can iterate over string-type
+objects. The reason for this is that many built-in types in Python implement
+either `__iter__` or `__getitem__` dunder methods by default. It tells Python
+how to iterate over an object. Therefore, objects types such as `list`,
+`tuple`, `string` are considered to be iterable objects or simply *iterables*.
+
+### Conclusion
+
+The mechanism behind the `for` statement allows Python to iterate over any
+object `obj` that implements `__iter__` or `__getitem__` method. As long as
+`iter(obj)` returns an valid iterator (with `__next__` method and `__iter__`
+method that returns `self`) Python is able to loop over `obj`.
