@@ -1,0 +1,68 @@
+---
+title: "Revisiting the Mechanism Behind the `for` Statement"
+date: 2020-05-20
+tags: 
+  - Python
+---
+
+Python is a high-level programming language that promotes the idea of having
+readable code. At the same time, it is an imperative programming language that
+makes heavy use of the flow control statements. One of the flow control
+statements is the `for` statement which is commonly used for iterating over a
+certain part of code until a condition is met.
+
+The `for` statement has been adapted to improve readability. It should be noted
+that Python's `for` loop is actually what is known as the [foreach
+loop](https://en.wikipedia.org/wiki/Foreach_loop). This removes the noise of
+referring to objects with indexes from the body of a loop and makes code
+cleaner. In the same time it gives a more intuitive iteration experience since
+the code can be read as pseudo code. Let's consider the following example:
+
+```py noLineNumbers
+>>> numbers = "42"
+>>> for number in numbers:
+...    print(number)
+...
+4
+2
+```
+
+The `for` statement provides a framework for iterating over any *iterable*
+object (any object whose class implements `__iter__` or `__getitem__`) one
+element at the time. Namely, in this case we iterate over `numbers` which is
+actually a string object. Instead of referring to objects with indexes Python
+defines a new variable `number` which gets updated in every iteration. The new
+variable behaves like any other variable in Python so be careful not to clobber
+another variable with the same name.
+
+The `for` statement actually represents syntactic sugar which removes the
+complexity of the iteration mechanism. Desugarizing the previous example
+exposes the underlying algorithm:
+
+```py noLineNumbers
+>>> numbers = "42"
+>>> inumbers = iter(numbers)
+>>> while True:
+...     try:
+...         number = next(inumbers)
+...         print(number)
+...     except StopIteration:
+...         break
+...
+4
+2
+```
+
+Behind the scenes Python takes the object passed in the `for` statement and
+calls `iter` built-in funciton on it. If the object is iterable `iter` returns
+an iterator (an object with `__next__` method and `__iter__` method that
+returns `self`) otherwise it returns `TypeError`. Afterwards, the iterator is
+passed as an argument to the `next` built-in function returning one value at
+the time until the iterator is exhausted at which point it raises the
+`StopIteration` exception and breaks out of the loop (see
+[documentation](https://docs.python.org/3/tutorial/classes.html#iterators)).
+
+This underlying mechanism for the `for` statement allows Python to iterate over
+any object `obj` that implements `__iter__` or `__getitem__` method. In other
+word, as long as `iter(obj)` returns an valid iterator (with `__next__` method
+and `__iter__` method that returns `self`) Python is able to loop over `obj`.
