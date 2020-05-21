@@ -32,6 +32,10 @@ module.exports = {
             name: `LinkedIn`,
             url: `https://www.linkedin.com/in/velibor-zeli/`,
           },
+	  {
+            name: "RSS",
+            url: "https://mylette.rs/rss.xml",
+          }
         ],
       },
     },
