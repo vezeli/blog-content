@@ -11,13 +11,6 @@ makes heavy use of the flow control statements. One of the flow control
 statements is the `for` statement which is commonly used for iterating over a
 certain part of code until a condition is met.
 
-Tip: This article focuses on the mechanism that runs the `for` statement and
-provides only the bare minima of information about different terms that we will
-come across, such as iterables and iterators. If at any point you feel that you
-would like to learn more about these I'd recommend starting with [Tray's
-post](https://treyhunner.com/2016/12/python-iterator-protocol-how-for-loops-work/)
-it's really nice!
-
 ### Common Usage
 
 A common anti-pattern is to use the `for` statement together with `range` and
@@ -108,4 +101,7 @@ how to iterate over an object. Therefore, objects types such as `list`,
 The mechanism behind the `for` statement allows Python to iterate over any
 object `obj` that implements `__iter__` or `__getitem__` method. As long as
 `iter(obj)` returns an valid iterator (with `__next__` method and `__iter__`
-method that returns `self`) Python is able to loop over `obj`.
+method that returns `self`) Python is able to loop over `obj`. If at this point
+you feel that you'd like to learn more about iterators and iterables I'd
+recommend heading to [Tray's
+post](https://treyhunner.com/2016/12/python-iterator-protocol-how-for-loops-work/) and starting there.
