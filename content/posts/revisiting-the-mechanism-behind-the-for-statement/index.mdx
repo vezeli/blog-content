@@ -5,44 +5,44 @@ tags:
   - Python
 ---
 
-Python is a high-level programming language that promotes the idea of having
-readable code. At the same time, it is an imperative programming language that
-makes heavy use of the flow control statements. One of the flow control
-statements is the `for` statement which is commonly used for iterating over a
-certain part of code until a condition is met.
+Python is a high-level programming language that promotes code readability. At
+the same time, it is an imperative programming language that makes heavy use of
+the flow control statements. One of the flow control statements is the `for`
+statement which is used for iterating over a part of code until a certain
+condition is met.
 
 ### Common Usage
 
-A common anti-pattern is to use the `for` statement together with `range` and
-`len` functions to iterate over objects using indexes. Here's an example:
+A common anti-pattern is to use the `for` statement together with the `range`
+and `len` functions to iterate over objects using indexes. Here's an example:
 
 ```py noLineNumbers
->>> numbers = "42"
->>> for i in range(len(numbers)):
-...     print(numbers[i])
+>>> planets = ("Mercury", "Venus", "Earth", "Mars")
+>>> for i in range(len(planets)):
+...     print(planets[i])
 ...
-4
-2
+Mercury
+Venus
+Earth
+Mars
 ```
 
-Even though retrieving items from a sequence performs as O(1), this way of
-iterating over objects is considered a bad practice. It indicates that the
-programmer has a strong accent carried over from another programming language.
-
-Instead, the `for` statement is aimed to improve readability. It provides a
-framework for iterating over *iterable* objects (any object whose class
-implements `__iter__` or `__getitem__`) one element at the time. Namely, in the
-previous example we iterate over a range-type object that has both dunder
-methods implemented by default. Let's rewrite the previous code block in a
-Pythonic way:
+This example shows how to iterate over a range-type object. Even though
+retrieving items from a sequence performs as O(1), this way of iterating over
+objects with indexes is considered a bad practice. It indicates that programmer
+has a strong accent carried over from another programming language.  Instead,
+the `for` statement is aimed to improve readability. Let's rewrite the previous
+code block in a Pythonic way:
 
 ```py noLineNumbers
->>> numbers = "42"
->>> for number in numbers:
-...    print(number)
+>>> planets = ("Mercury", "Venus", "Earth", "Mars")
+>>> for planet in planets:
+...    print(planet)
 ...
-4
-2
+Mercury
+Venus
+Earth
+Mars
 ```
 
 Now this is much better! Notice that Python's `for` loop is actually what is
@@ -50,7 +50,7 @@ known as the [foreach loop](https://en.wikipedia.org/wiki/Foreach_loop) and it
 removes the noise of referring to an object with indexes making the code
 cleaner. At the same time it gives a more intuitive iteration experience since
 the code can be read as pseudo code. Instead of referring to an object with
-indexes Python defines a new variable `number` which gets updated in every
+indexes Python defines a new variable `planet` which gets updated in every
 iteration. The new variable behaves like any other variable in Python and is
 not bounded to the namespace of the loop (meaning that the variable exists even
 after the loop is over). Therefore, be careful not to clobber another variable
@@ -58,50 +58,55 @@ with the same name.
 
 Additionally, mutating an object while iterating over it is not recommended and
 can lead to nasty bugs. There are a dozen of ways to mutate an object. However,
-without accessing indexes the beginner programmers are discouraged from this
-idea.
+without accessing indexes while looping over objects the beginner programmers
+are discouraged from this idea.
 
 ### Mechanism Behind the `for` Statement
 
 The `for` statement is actually syntactic sugar that represents an interface
-for interacting with iterable and iterator objects. Desugarizing the previous
-example exposes the underlying mechanism:
+for interacting with *iterable* objects. Iterable is considered any object that
+has either `__iter__` or `__getitem__` dunder method implemented. Desugarizing
+the previous example exposes the underlying mechanism:
 
 ```py noLineNumbers
->>> numbers = "42"
->>> inumbers = iter(numbers)
+>>> planets = ("Mercury", "Venus", "Earth", "Mars")
+>>> iplanets = iter(planets)
 >>> while True:
 ...     try:
-...         number = next(inumbers)
-...         print(number)
+...         planet = next(iplanets)
+...         print(planet)
 ...     except StopIteration:
 ...         break
 ...
-4
-2
+Mercury
+Venus
+Earth
+Mars
 ```
 
 Behind the scenes Python takes the object passed in the `for` statement and
-calls `iter` built-in function on it. If the object is iterable `iter` returns
-an iterator (an object with `__next__` method and `__iter__` method that
-returns `self`) otherwise it returns `TypeError`. Afterwards, the iterator is
-passed as an argument to the `next` built-in function returning one value at
-the time until the iterator is exhausted at which point it raises the
+calls the `iter` built-in function on it. If the object is iterable than the
+`iter` returns an iterator (an object with `__next__` method and `__iter__`
+method that returns `self`) otherwise it returns `TypeError`. Afterwards, the
+iterator is passed as an argument to the `next` built-in function returning one
+value at the time until the iterator is exhausted at which point it raises the
 `StopIteration` exception and breaks out of the loop (see
 [documentation](https://docs.python.org/3/tutorial/classes.html#iterators)).
 
-In the previous examples, we've seen that we can iterate over string-type
-objects. The reason for this is that many built-in types in Python implement
-either `__iter__` or `__getitem__` dunder methods by default. It tells Python
-how to iterate over an object. Therefore, objects types such as `list`,
-`tuple`, `string` are considered to be iterable objects or simply *iterables*.
+In the previous examples, we've seen that we can iterate over variable
+`planets` which is a list-type object. The reason for this is that many
+built-in types in Python implement either `__iter__` or `__getitem__` dunder
+methods by default. These methods tell Python how to iterate over an object.
+Therefore, object types such as `list`, `tuple`, `string` are considered to be
+by default iterable objects or simply *iterables*.
 
 ### Conclusion
 
 The mechanism behind the `for` statement allows Python to iterate over any
 object `obj` that implements `__iter__` or `__getitem__` method. As long as
-`iter(obj)` returns an valid iterator (with `__next__` method and `__iter__`
-method that returns `self`) Python is able to loop over `obj`. If at this point
-you feel that you'd like to learn more about iterators and iterables I'd
-recommend heading to [Tray's
-post](https://treyhunner.com/2016/12/python-iterator-protocol-how-for-loops-work/) and starting there.
+`iter(obj)` returns a valid iterator (with `__next__` method and `__iter__`
+method that returns `self`) Python is able to loop over the object `obj`. If at
+this point you feel that you'd like to learn more about iterators and iterables
+I'd recommend heading to [Tray's
+post](https://treyhunner.com/2016/12/python-iterator-protocol-how-for-loops-work/)
+and starting there.
