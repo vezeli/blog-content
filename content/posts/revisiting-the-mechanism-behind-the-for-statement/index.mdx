@@ -1,23 +1,24 @@
 ---
 title: "Revisiting the Mechanism Behind the `for` Statement"
-date: 2020-05-21
+date: 2020-06-09
 tags: 
   - Python
 ---
 
-Python is a high-level programming language that promotes code readability. At
-the same time, it is an imperative programming language that makes heavy use of
-the flow control statements. One of the flow control statements is the `for`
-statement which is used for iterating over a part of code until a certain
-condition is met.
+In Python the `for` statement is an important tool used for specifying
+iteration. This article (literally) goes over the `for` statement and uncovers
+the mechanism that makes it tick. Before disassembling the `for` statement
+we'll first look at the way it is used and from there slowly start diving into
+the internals.
 
-### Common Usage
+### The `for` Statement 101
 
-A common anti-pattern is to use the `for` statement together with the `range`
-and `len` functions to iterate over objects using indexes. Here's an example:
+The `for` statement acts as an interface for iterating over elements
+inside objects. The most obvious way for a C programmer to iterate
+over an object in Python is the following:
 
 ```py noLineNumbers
->>> planets = ("Mercury", "Venus", "Earth", "Mars")
+>>> planets = ("Mercury", "Venus", "Earth", "Mars", )
 >>> for i in range(len(planets)):
 ...     print(planets[i])
 ...
@@ -27,15 +28,24 @@ Earth
 Mars
 ```
 
-This example shows how to iterate over a range-type object. Even though
-retrieving items from a sequence performs as O(1), this way of iterating over
-objects with indexes is considered a bad practice. It indicates that programmer
-has a strong accent carried over from another programming language.  Instead,
-the `for` statement is aimed to improve readability. Let's rewrite the previous
-code block in a Pythonic way:
+The idea here is to create an index variable `i` from an arithmetic progression
+using the built-in `range` function which goes from zero up to but not
+including `len(planets)`. The index variable is used with the container object
+in following way `planets[i]` to retrieve the elements one by one in each
+iteration.
+
+The problem with the previous example is that there are several things
+happening at the same time making it hard to separate the "business logic" in
+the code from the boilerplate required for iterating. In order to iterate over
+elements of a container object programmer has to build an arithmetic
+progression and access the element by referring to index. In a situation with
+nested `for` statements the code becomes harder to read and debug. For this
+reason, Python provides a better way to iterate over objects.
+
+Let's rewrite the previous code block in a more Pythonic way:
 
 ```py noLineNumbers
->>> planets = ("Mercury", "Venus", "Earth", "Mars")
+>>> planets = ("Mercury", "Venus", "Earth", "Mars", )
 >>> for planet in planets:
 ...    print(planet)
 ...
@@ -45,38 +55,115 @@ Earth
 Mars
 ```
 
-Now this is much better! Notice that Python's `for` loop is actually what is
-known as the [foreach loop](https://en.wikipedia.org/wiki/Foreach_loop) and it
-removes the noise of referring to an object with indexes making the code
-cleaner. At the same time it gives a more intuitive iteration experience since
-the code can be read as pseudo code. Instead of referring to an object with
-indexes Python defines a new variable `planet` which gets updated in every
-iteration. The new variable behaves like any other variable in Python and is
-not bounded to the namespace of the loop (meaning that the variable exists even
-after the loop is over). Therefore, be careful not to clobber another variable
-with the same name.
+Now this is much better because the "business logic" inside the loop is clear.
+Notice how the `for` loop actually behaves as the [foreach
+loop](https://en.wikipedia.org/wiki/Foreach_loop) where Python simply knows how
+to iterate over every element inside the `planets` without programmer having to
+refer to indexes. We've introduced variable `planet` which is an iteration
+variable and gets updated in each iteration with a new element from the `for`
+loop. This behaviour removes the noise of building an arithmetic progression
+and referring to objects with indexes. At the same time it gives a more
+intuitive iteration experience since the code can be read as pseudo code.
 
-Additionally, mutating an object while iterating over it is not recommended and
-can lead to nasty bugs. There are a dozen of ways to mutate an object. However,
-without accessing indexes while looping over objects the beginner programmers
-are discouraged from this idea.
+In terms of performance
+[looping_performance.py](https://gist.github.com/vezeli/31986659ce6fa808c11bad3ebba428a7)
+is a script that measures the execution time of the two examples and shows that
+the second example preforms significantly faster than iterating using indexes.
 
-### Mechanism Behind the `for` Statement
+### Feeding the `for` Statement With Iterables
 
-The `for` statement is actually syntactic sugar that represents an interface
-for interacting with *iterable* objects. Iterable is considered any object that
-has either `__iter__` or `__getitem__` dunder method implemented. Desugarizing
-the previous example exposes the underlying mechanism:
+Until now I've deliberately avoided talking about the type of objects which
+were passed into the `for` statement. At this point, however, I'd like to focus
+on the following question: "What type of objects can we pass into the `for`
+statement?"
+
+In the previous examples, we've ignorantly passed two different types of
+objects into the `for` statement (`range`[^1] and `tuple`) and assumed that
+Python knows how to iterate over these objects. That being said, what would
+happen if we try to iterate over an object of type integer (`int`)? Let's take
+a look at the following example:
 
 ```py noLineNumbers
->>> planets = ("Mercury", "Venus", "Earth", "Mars")
+>>> for number in 42:
+...    print(number)
+...
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: 'int' object is not iterable
+```
+
+Here we get an error message! More specifically, Python gives us a `TypeError`
+saying that it doesn't know how to iterate over `int` objects because
+apparently `int` is not an _iterable_. With a bit of help from Python, in this
+example we came to the conclusion that in order for an object to get along with
+the `for` statement it has to be iterable.
+
+An iterable is an object that knows how to return its members one at a time.
+Iterable objects are required to implement either `__iter__` or `__getitem__`
+methods. These methods tell Python the order in which it should return elements
+inside the iterable. Many of the default types such as `list`, `tuple`, `dict`
+and others are iterable and we don't have to worrying about implementing their
+dunder methods, we simply pass them into the `for` statement.
+
+In order to see if an object is iterable we can call the `iter` built-in
+function and pass the object as an argument. Here's an example of passing an
+object of type `list` as an argument inside the `iter` function:
+
+```py noLineNumbers
+>>> planets = ("Mercury", "Venus", "Earth", "Mars", )
+>>> iter(planets)
+<tuple_iterator object at 0x7f83e198bbe0>
+```
+
+We can see that this call was successful because we didn't get any error!
+However, if we try doing the same with an integer argument we get the following
+message:
+
+```py noLineNumbers
+>>> iter(42)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: 'int' object is not iterable
+```
+
+Notice that this error message is identical to the one we got when we passed an
+`int` to the `for` statement!
+
+### The Mechanism Behind the `for` Statement
+
+Python has no way of knowing how to iterate over an object passed to the `for`
+statement and therefore it calls the `iter` built-in function with the object
+as an argument to get help. This is the reason we get the exact same error
+message when passing `int` object to the `for` statement and the `iter`
+function.
+
+The `iter` function searches the `__iter__` and `__getitem__` methods inside
+the object to find the order in which elements should be iterated over and
+returns a very simple object called _iterator_ (not to be mistaken for
+iterable). The iterator is responsible for telling the `for` statement exactly
+how to iterate over the iterable object through a method called `__next__`. An
+iterator object can be called with Python's `next` function to return an
+element from the iterable that was used for creating the iterator. Once all the
+elements from have been returned `next` function raises a `StopIteration`
+exception. 
+
+Hopefully, at this point you understand that the `for` statement is top of an
+iceberg when it comes to iteration. Under the surface there are functions like
+`iter` and `next` that do a lot of work. Therefore, the `for` statement is
+considered more of an interface for interacting with iterable objects. We can
+rewrite the example with `planets` and expose the mechanism behind the `for`
+statement:
+
+```py noLineNumbers
+>>> planets = ("Mercury", "Venus", "Earth", "Mars", )
 >>> iplanets = iter(planets)
 >>> while True:
 ...     try:
 ...         planet = next(iplanets)
-...         print(planet)
 ...     except StopIteration:
 ...         break
+...     else:
+...         print(planet)
 ...
 Mercury
 Venus
@@ -84,29 +171,85 @@ Earth
 Mars
 ```
 
-Behind the scenes Python takes the object passed in the `for` statement and
-calls the `iter` built-in function on it. If the object is iterable than the
-`iter` returns an iterator (an object with `__next__` method and `__iter__`
-method that returns `self`) otherwise it returns `TypeError`. Afterwards, the
-iterator is passed as an argument to the `next` built-in function returning one
-value at the time until the iterator is exhausted at which point it raises the
-`StopIteration` exception and breaks out of the loop (see
-[documentation](https://docs.python.org/3/tutorial/classes.html#iterators)).
+Let's go over the details one more time: `planets` is an iterable object which
+means that it can be iterated over since it implements `__iter__` or
+`__getitem__` method. Calling the `iter` function on an iterable object returns
+an iterator with `__next__` method. Afterwards, the iterator object is passed
+to the `next` function inside an infinite loop and it returns elements from the
+`planets` object. After the iterator returned every object it gets exhausted
+and raises a `StopIteraton` exception at which point Python exits the infinite
+loop.
 
-In the previous examples, we've seen that we can iterate over variable
-`planets` which is a list-type object. The reason for this is that many
-built-in types in Python implement either `__iter__` or `__getitem__` dunder
-methods by default. These methods tell Python how to iterate over an object.
-Therefore, object types such as `list`, `tuple`, `string` are considered to be
-by default iterable objects or simply *iterables*.
+#### Adding an `else` Clause
+
+The `else` clause that follows the `for` statement is not a well-known or used
+feature but it is a part of Python's flow control. The previously described
+mechanism need to be slightly modified in order to support the `else` clause.
+Here's how the code looks with the `else` clause:
+
+```py noLineNumbers
+>>> planets = ("Mercury", "Venus", "Earth", "Mars", )
+>>> iplanets = iter(planets)
+>>> _loop = True
+>>> while _loop:
+...     try:
+...         planet = next(iplanets)
+...     except StopIteration:
+...         _loop = False
+...     else:
+...         print(planet)
+... else:
+...     print(f"The `break` statement didn't interrupt the loop!")
+...
+Mercury
+Venus
+Earth
+Mars
+The `break` statement didn't interrupt the loop!
+```
+
+In case of the `while` statement Python runs the code inside the `else` clause
+only when the logical expression in the `while` loop becomes `False`.
+Therefore, we only have to changed the way of exiting the infinite loop:
+instead of using the `break` statement in this case the loop terminates with
+`_loop = False`.
+
+With this implementation, the `else` clause shouldn't run when we use the
+`break` statement inside the loop body. Let's add only two lines which include
+the `break` statement in the loop of the code and test if the `else` clause
+runs:
+
+```py  noLineNumbers
+>>> planets = ("Mercury", "Venus", "Earth", "Mars", )
+>>> iplanets = iter(planets)
+>>> _loop = True
+>>> while _loop:
+...     try:
+...         planet = next(iplanets)
+...     except StopIteration:
+...         _loop = False
+...     else:
+...         print(planet)
+...         if planet == "Earth":
+...             break
+... else:
+...     print(f"The `break` statement didn't interrupt the loop!")
+...
+Mercury
+Venus
+Earth
+```
+
+The test uses the `break` statement to exit the loop when the iteration reaches
+the `"Earth"` object and the `else` clause doesn't run. Our test was a success!
 
 ### Conclusion
 
-The mechanism behind the `for` statement allows Python to iterate over any
-object `obj` that implements `__iter__` or `__getitem__` method. As long as
-`iter(obj)` returns a valid iterator (with `__next__` method and `__iter__`
-method that returns `self`) Python is able to loop over the object `obj`. If at
-this point you feel that you'd like to learn more about iterators and iterables
-I'd recommend heading to [Tray's
-post](https://treyhunner.com/2016/12/python-iterator-protocol-how-for-loops-work/)
-and starting there.
+We've seen that the `for` statement represents syntactic sugar which acts as an
+interface for interacting with iterable objects. Additionally, we've exposed
+the underlying mechanism and showed that under the surface the `for` statement
+calls the `iter` and `next` built-in functions. Hopefully, you've realized that
+the iterator protocol lies in the heart of Python's iteration.
+
+[^1]: In Python 2.x the `range` function returns an object of type `list` while
+in Python 3.x it returns an object of type `range`.
