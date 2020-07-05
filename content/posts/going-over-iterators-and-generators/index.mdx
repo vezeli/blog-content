@@ -1,0 +1,739 @@
+---
+title: Going Over Iterators and Generators
+date: 2020-07-05
+tags:
+  - python
+  - object-oriented programming
+  - iterators
+  - generators
+---
+
+This article explains the grounding structure of iteration in Python. The
+article start by looking at the iterator protocol and implements iterator
+objects using object-oriented programming (OOP). Afterwards, it introduces
+generator functions and the `yield` statement as well as generator expressions
+and shows how these simplify the way iterators are created. Additionally, we'll
+touch on some newer topics like retuning values from generators using the
+`return` statement. Finally, it gives a simple primer of how to use generators
+in OOP.
+
+All examples in this article require a version of Python > 3.3 with an
+exception of a few examples that use the walrus operator (`:=`) which is only
+available in Python version > 3.8. 
+
+### Iterator Objects: The Iterator Protocol
+
+Because of its dynamic nature Python doesn't impose strong interfaces. However,
+there exist protocols and the so-called _dunder methods_, methods whose names
+start and end with a double underscore character, that are responsible for
+the way objects behave.
+
+The `__iter__` (and `__getitem__`) dunder method is fundamental for iteration
+because any object with this method is able to interact with the `iter`
+built-in function. Objects that have an `__iter__` method are also called
+iterable objects (or iterables for short). The `iter` function calls the
+`__iter__` method of an object and creates an iteration procedure that Python
+follows in order to iterate over the object.
+
+Here's a practical example, say we have a tuple `t = (0, 1, 2,)` and we'd like
+to iterate over its elements. We'd expect that in the first iteration Python
+finds `0`, in the second iteration `1`, and in the third iteration `2`.  After
+iterating over the last element we'd expect from Python to stop the iteration
+process. This logics behind the iteration is prepared by the `t.__iter__` method
+and it's called _iterator object_ (or iterator for short). 
+
+Here's the code for our previous example: 
+
+```py noLineNumbers
+>>> t = (0, 1, 2,)
+>>> iterator_t = iter(t)
+```
+
+The `iter` function internally called `t.__iter__` dunder method and returned
+an iterator which was assigned to `iterator_t`. Once the iterator is created
+Python knows how to iterate over the iterable `t = (0, 1, 2,)`, as we'll see.
+
+Built-in types such as lists, tuples, dictionaries, sets and others, are
+iterable objects and have both `__iter__` or `__getitem__` dunder methods.
+Therefore, there's no need to implement these dunder methods for the built-in
+types because Python already knows how to do this. On the other hand, for
+user-defined types (classes) it's important to implement `__iter__` methods
+which return iterators in order to iterate over them (or use them in `for`
+loop).
+
+Next we'll learn about the structure of iterators and how to write them using
+OOP.
+
+#### The Iterator Protocol
+
+In order for any object to be an iterator it has to supports the [iterator
+protocol](https://docs.python.org/3/library/stdtypes.html#typeiter). There are
+three rules which every iterator must satisfy: it must keep a state which tells
+what is the current item in iteration process; it has to modify the state
+inside the `__next__` dunder method with next element in iteration process and
+return it or raise the `StopIteration` exception in case there are no more
+elements; it must have an `__iter__` method which returns the same iterator.
+
+It's easy to show that tuple `t = (0, 1, 2,)` doesn't respect the third rule of
+the iterator protocol where as `iterator_t` does:
+
+```py noLineNumbers
+>>> t = (0, 1, 2,)
+>>> t is (iterator_t := iter(t))
+False
+>>> iterator_t is iter(iterator_t)
+True
+```
+
+Because the `iter` built-in function simply calls the `t.__iter__` method, the
+previous code block is semantically equivalent to:
+
+```py noLineNumbers
+>>> t = (0, 1, 2,)
+>>> t is (iterator_t := t.__iter__())
+False
+>>> iterator_t is iterator_t.__iter__()
+True
+```
+
+Additionally, we can show that our tuple doesn't have a `__next__` method while
+its iterator does:
+
+```py noLineNumbers
+>>> hasattr(t, "__next__")
+False
+>>> hasattr(iterator_t, "__next__")
+True
+```
+
+The same way the `iter`  function calls `__iter__` dunder method, the `next`
+built-in function calls `__next__` dunder method. `__next__` method does all of
+the heavy lifting because it changes the state of an iterator and returns the
+next element from it. Let's use it on our iterator to change its state and
+return values:
+
+```py noLineNumbers
+>>> next(iterator_t)
+0
+>>> next(iteartor_t)
+1
+>>> next(iterator_t)
+2
+>>> next(iterator_t)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+```
+
+Notice that the only way to interact with a iterator is to make it produce a
+new value using the `next` function. Because of their simplicity iterators are
+very fast and memory efficient and therefore they are used in many places in
+Python where performance is important. Article called [Revisiting the Mechanism
+Behind the `for` Statement] [for_loop_mechanism] explains how iterators are
+used for iteration inside the `for` loop.
+
+Next, we'll implement the iterator protocol inside a class which we'll use to
+create iterator objects. There, we'll show how iterators work internally. 
+
+#### Implementing an Iterator Object That Counts Backwards
+
+According to the iterator protocol we'll create a class called `Countdown`.
+This class will be used to instantiate iterators that count backwards from a
+starting number to zero in steps of one. You can think of this class as
+_iterator factory_ that is used for creating new iterators.
+
+Let's define our new class and its behaviour:
+
+```py
+class Countdown:
+    def __init__(self, start):
+        self._count = start
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self._count > 0:
+            self._count, count = self._count - 1, self._count
+            return count
+        else:
+            raise StopIteration
+```
+
+Internal state of the class is kept inside `self._count`. This variable updates
+only when the `__next__` method is called by the `next` function. Therefore, a
+starting underscore in the name indicates that this is a private variable. 
+
+`Countdown` class has three key features:
+
+- keeps the state inside the `self._count`
+
+- modifies the state only inside the `__next__`, more specifically decrements the
+`self._count` every time the `next` function is used, and raises the
+`StopIteration` exception when `self._count` becomes lower than zero to signal
+that iteration has ended
+
+- returns the same object with the `__iter__` method
+
+Notice that `__iter__` method of iterator objects returns the same object
+(iterator). Therefore, iterators are iterable objects but the opposite is not
+true.
+
+Let's create an instance of `Countdown` class and test it:
+
+```py noLineNumbers
+>>> new_year = Countdown(3)
+>>> new_year is iter(new_year)
+True
+>>> next(new_year)
+3
+>>> next(new_year)
+2
+>>> next(new_year)
+1
+>>> next(new_year)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+```
+
+This test shows that instance of the `Countdown` class fulfills the iterator
+protocol. Namely, it keeps the state and changes it each time Python asks for a
+next element with the `next` function. Also calling the `iter` function with
+iterator as an argument returns the same iterator.
+
+#### To Infinity and Beyond: Infinite Iterators
+
+It's important that iterator raises the `StopIteration` exception when it
+doesn't have more values to return. Iterators that have raised the
+`StopIteration` exception are called _exhausted iterators_. Previous examples
+have shown that iterators instantiated with `Countdown` class became exhausted
+when their internal state (`self._count`) was lower than zero. Exhausted
+iterator cannot produce values. Repopulating an exhausted iterator is the same
+as creating a new instance.
+
+Interestingly, there exist _infinite iterators_. These iterators don't have a
+condition that raises the `StopIteration` exception. Let's write a class that
+is used for creating infinite iterators that echoes whatever is passed to them:
+
+```py
+class Echo:
+    def __init__(self, message):
+        self._message = message
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self._message
+```
+
+Amazingly, the code inside `Echo.__next__` method is simpler than the one in
+`Countdown.__next__` method. To create a class that instantiates infinite
+iterators it's sufficient to remove the condition for raising the
+`StopIteration` exception.
+
+Let's also make sure that it works:
+
+```py noLineNumbers
+>>> troll_kid = Echo("Why?")
+>>> next(troll_kid)
+'Why?'
+>>> next(troll_kid)
+'Why?'
+>>> next(troll_kid)
+'Why?'
+```
+
+We've used `Echo` to create an infinite iterator that represents a kid which
+always asks the question "Why?" and trolls people that way. This iterator never
+gets exhausted because it always knows how to create a new value when the
+`next` function requests it.  Plugging this iterator inside the `for` statement
+would really troll Python because it would go into an infinite loop trying to
+find a non-existing `StopIteration` exception.
+
+Python's Standard Library has a module called
+[`itertools`](https://docs.python.org/3/library/itertools.html) that defines a
+number of functions used for creating infinite iterators. The `Echo` class
+reimplemented a simpler version of the [`itertools.repeat`] [repeat] function
+that creates an infinite iterator which repeats any object given to it.
+
+#### Lazy Evaluation
+
+You've probably realized that iterator objects have two states: suspended and
+activated. When they're suspended they keep the internal state unchanged and as
+soon as the `next` function calls them they activate and produce a value.
+After the activation they suspend again. The iterator protocol allows iterators
+to produce values only when another part of code requires that, otherwise they
+stay suspended. This kind of execution is referred to as _lazy evaluation_ (or
+_call-by-need_)[^1].
+
+Lazy evaluation is heavily used for code optimization. Instead of creating
+memory-demanding data structures with elements (such as lists, tuples, ranges)
+and passing them around lazy evaluation allows us to pass data in sequences of
+values from one place to another without keeping it in memory after computation
+is completed.
+
+### Generator Objects
+
+It turns out that implementing the iterator protocol in a class is a lot of
+work. This is where _generator objects_ (or generators for short) come in!
+Instead of creating iterators with a class we'll see that it is much easier to
+create iterators using a special function that has the `yield` statement in
+function body. These special functions are called _generator functions_ and are
+able to create iterator objects called generator.
+
+#### Generator Function vs. Generators
+
+The `yield` statement, just like the `return` statement, is bound to the body
+of a function and cannot be used outside of it:
+
+```py noLineNumbers {3}
+>>> yield 42
+  File "<stdin>", line 1
+SyntaxError: 'yield' outside function
+```
+
+Functions that have the `yield` statements inside the function body are called
+generator functions. These are different from regular functions without the
+`yield` statement because they create generator objects. You can think of
+generator functions as _generator factories_ that instantiate generators.
+
+Let's write a regular function and a generator function and call them to see
+the difference:
+
+```py noLineNumbers {5,10}
+>>> def f():
+...     return 42
+...
+>>> f()
+42
+>>> def generator_factory():
+...     yield 42
+...
+>>> generator_factory()
+<generator object generator_factory at 0x7f49eb1f8f90>
+```
+
+The regular function returns the value which follows the `return` statement in
+the function definition while calling the generator function creates a
+generator object (see the highlighted lines in the code block).
+
+Like iterators, generators implement the iterator protocol. We'll create a
+generator by calling the generator function and show that generators pass all
+the tests like iterators:
+
+```py noLineNumbers
+>>> g = generator_factory() # create a generator
+>>> hasattr(g, "__iter__")
+True
+>>> g is iter(g)
+True
+>>> hasattr(g, "__next__")
+True
+>>> next(g)
+42
+>>> next(g)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+```
+
+These are similar to the tests used to show that iterators support the iterator
+protocol.
+
+A generator instance with `__iter__` and `__next__` methods is creates after
+calling a generator function. The `iter` function called on a generator returns
+the same generator instance. Additionally, calling the `next` function
+activates generators and executes the body of generator function until the next
+`yield` statement is reached and produces the value which follows the
+statement. Once it produces a value generator suspends and waits for next
+activation with the `next` function. When there are no more `yield` statements
+in the function body generator gets exhausted and raises the `StopIteratation`
+exception.
+
+#### Revisiting the Previous Iterators
+
+The previous section shows that generator functions provide a powerful
+frameworks for creating iterator objects called generators. Therefore, we'll
+rewrite the previous examples: `iterator_t`, `Countdown`, and `Echo` using
+generator functions.
+
+##### The `iterator_t` instance:
+
+Let's write a generator function which creates generators that are similar to
+`iterator_t`:
+
+```py
+def gen_iterator_t():
+   yield 0
+   yield 1
+   yield 2
+   return None
+```
+
+Generator functions are usually written without the `return None` statement
+because in Python any function that doesn't have the `return` statement by
+default returns `None`. Python versions > 3.3 support the use of both `return`
+and `yield` statements inside the body of a generator function.
+
+Let's call `gen_iterator_t` to create a generator instance and, since
+generators implement the iterator protocol, use the `next` function to change
+the generator state and produce values:
+
+```py noLineNumbers
+>>> iterator_t = gen_iterator_t()
+>>> next(iterator_t)
+0
+>>> next(iterator_t)
+1
+>>> next(iterator_t)
+2
+>>> next(iterator_t)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+```
+
+The `next` function activates the generator and advances the code inside the
+generator function until the next `yield` statement. When a yield statement is
+reached the generator produces a value and suspends. It reactivates when it
+gets called with the `next` function. When there are no more `yield` statements
+or when the `return` statement inside the generator function is reached the
+generator raises the `StopIteration` exception at which point it behaves like
+an exhausted iterator.
+
+##### The `Countdown` class:
+
+The following generator function is able to substitute the `Countdown` class:
+
+```py
+def gen_countdown(start):
+    count = start
+    while count > 0:
+        yield count
+        count -= 1
+    return None
+```
+
+Generator functions, like regular functions, accept function arguments. Our
+`gen_countdown` is simpler to read and easier to maintain compared to the
+`Countdown` class which does the same job. Notice also that the `yield`
+statement is used inside a loop, this is a very common pattern for writing
+generator functions.
+
+Let's show that generators created with `gen_countdown` behaves like iterators
+instantiated with the `Countdown` class:
+
+```py noLineNumbers
+>>> new_year = gen_countdown(3)
+>>> new_year is iter(new_year)
+True
+>>> next(new_year)
+3
+>>> next(new_year)
+2
+>>> next(new_year)
+1
+>>> next(new_year)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+```
+
+Generator instance `new_year` behaves exactly like the iterator instance
+`new_year`. Therefore, in Python generators and iterators are most often
+considered synonyms.
+
+##### The `Echo` class:
+
+Using infinite `while` loops it's possible to write generator functions that
+contain infinite number of `yield` statements. This pattern supports
+construction of infinite generators.
+
+The following generator function creates generators similar to the iterators
+created with the `Echo` class:
+
+```py
+def gen_echo(message):
+    while True:
+        yield message
+```
+
+Notice that we've also intentionally left out the `return None`. This is
+probably for the better because this generator function cannot execute until
+the function end. Thus, it's not able to return anything.
+
+Let's create an infinite generator:
+
+```py noLineNumbers
+>>> troll_kid = gen_echo("Why?")
+>>> next(troll_kid)
+'Why?'
+>>> next(troll_kid)
+'Why?'
+>>> next(troll_kid)
+'Why?'
+```
+
+This generator cannot get exhausted because the `yield` statement is stuck
+inside the infinite loop. Next, we'll talk about retrieving return values from
+generators once they're exhausted.
+
+#### Retrieving Return Values from Generators
+
+[PEP 380](https://www.python.org/dev/peps/pep-0380/) was implemented in Python
+3.3 and ever since then generators are able to return a value once they're
+exhausted.  The return value of a generator is passed inside the
+`StopIteration` exception in an attribute called `value`.
+
+Take a look at the following generator function:
+
+```py
+from collections import namedtuple
+
+Stat = namedtuple("Stat", ["total", "positive", "negative"])
+
+def filter_from(words, f):
+    c = 0
+    for total, w in enumerate(words, start=1):
+        if f(w):
+            c += 1 
+            yield w
+    return Stat(total, c, total-c)
+```
+
+This generator function filters out elements from `words` according to the rule
+in the second argument. The second argument is a function which takes a string
+and returns a boolean. While generator is active it counts the number of total
+elements and the ones that have passed through the filter. Once generator is
+exhausted it returns `Stat` namedtuple with statistics about the total and the
+filtered number of items.
+
+Let's create a generator that searches for palindromes (symmetric words):
+
+```py noLineNumbers
+>>> p = filter_from(
+...     words := "Boeing 737 landed at noon in Cairo.".split(),
+...     lambda x: x == x[::-1]
+... )
+```
+
+The first argument is list of words from the sentence and the second argument
+is lambda function that checks if a word is palindrome. Additionally, using the
+walrus operator (`:=`) we've assigned the list of words from the sentence to
+variable `words` so that it's easy to recreate the same generator once it's
+exhausted.
+
+Let's filter out palindromes with our generator and iterate over them with the
+`next` function until the generator gets exhausted:
+
+```py noLineNumbers {6,7,8}
+>>> next(p)
+'737'
+>>> next(p)
+'noon'
+>>> next(p)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration: Stat(total=7, positive=2, negative=5)
+```
+
+Notice that when the generator gets exhausted the traceback message indicates
+that the `StopIteration` exception object carries the return value from the
+generator. The `StopIteration` object must be caught with the `try`/`except`
+statements before the return value of the generator is retrieved from the
+attribute called `value`.
+
+Here's an example of a `while` loop that captures the `StopIteration`
+exception, retrieves the return value of the generator and breaks out of the
+loop:
+
+```py noLineNumbers
+>>> p = filter_from(words, lambda x: x == x[::-1])
+>>> while True:
+...     try:
+...         v = next(p)
+...     except StopIteration as exception:
+...         print(return_value := exception.value)
+...         break
+...     else:
+...         print(v)
+...
+737
+noon
+Stat(total=7, positive=2, negative=5)
+```
+
+Returning values from generator functions is more practical when working in the
+context of coroutines. Although sometimes returning a value from a generator is
+useful because it allows programmer to reflect on generated elements to make
+further decisions.
+
+#### Generator Expressions: The Anonymous Generators
+
+Generator expressions further shorten the process of creating generators by
+delegating anonymous generators directly and without the need for calling
+generator functions. The syntax for generator expressions is similar to [list
+comprehensions](https://docs.python.org/3/tutorial/datastructures.html?highlight=list%20comprehension#list-comprehensions)
+with a difference that generator expresses are created inside parenthesis "()"
+while list comprehensions are created inside square brackets "[]".
+
+Let's create a generator instance similar to the one we've created using
+`gen_countdown` and show that the created generator supports the iterator
+protocol:
+
+```py noLineNumbers
+>>> new_year = (i for i in reversed(range(1, 4)))
+>>> new_year is iter(new_year)
+True
+>>> next(new_year)
+3
+>>> next(new_year)
+2
+>>> next(new_year)
+1
+>>> next(new_year)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+```
+
+With this generator expression we've iterated over every element of
+`reversed(range(1, 4))` and yielded it. Just like any other iterator object
+generator expressions can be used inside the `for` statement:
+
+```py noLineNumbers
+>>> for count in (i for i in reversed(range(1, 4))):
+...     print(count)
+...
+3
+2
+1
+```
+
+Notice that generator expressions are anonymous just like lambda functions.
+Although many Pythonistas are dreaded by lambda functions they seem to be happy
+using generator expressions, but when there is a need to reuse a generator in
+different places it's almost always better to write a separate generator
+function.
+
+Flexibility of generator expressions makes it easy to combine them with
+function arguments. Similar to list comprehensions, we can crate lists by
+combining generator expressions and the `list` function, see here:
+
+```py noLineNumbers
+>>> list(i for i in reversed(range(1, 4)))
+[3, 2, 1]
+```
+
+Additionally, generator expressions support the `if` statement which allows
+them to behave like the `filter` built-in function. Let's filter out even
+arguments from the previous example and create a list with only odd numbers:
+
+```py noLineNumbers
+>>> list(i for i in reversed(range(1, 4)) if i % 2 != 0)
+[3, 1]
+```
+
+For exercise, rewrite `troll_kid` generator using a generator expression (hint:
+use
+[`itertools.count`](https://docs.python.org/3/library/itertools.html#itertools.count)
+or [`itertools.repeat`] [repeat])[^2].
+
+More information and better examples of generator expressions are found in [PEP
+289](https://www.python.org/dev/peps/pep-0289/) which was written by the
+ever-amusing Python core developer Raymond Hettinger (check out his amazing
+YouTube videos).
+
+### Primer of Generator Usage in OOP
+
+It was previously mentioned that `__iter__` method must always return an
+iterator. Because generator functions return generators (which are identical to
+iterators) they are suitable for implementing `__iter__` method. This is the
+preferred way of creating user-defined class for iterable objects.
+
+#### Generator Functions
+
+Let's create a container class `PicnicBasket` which has an `__iter__` method.
+This means that instances of this class are going to be iterable objects:
+
+```py
+class PicnicBasket:
+    def __init__(self, *content):
+        self.content = content 
+
+    def __iter__(self):
+        for item in self.content:
+            yield item
+```
+
+The `__iter__` method is implemented as a generator function. Notice that the
+`__iter__` method doesn't contain the `return` statement because it's expected
+that it returns `None` once its generator is exhausted.
+
+#### Generator Expression
+
+Using generator expressions its possible to rewrite `PicnicBasket.__iter__` method:
+
+```py noLineNumbers
+class PicnicBasket:
+    def __init__(self, *content):
+        self.content = content
+
+    def __iter__(self):
+        return (item for item in self.content)
+```
+
+This example clearly shows that the `__iter__` method returns a generator.
+
+`PicnicBasket` instances are iterable because they have `__iter__` method which
+returns an iterator. We'll create an instance of `PicnicBasket` and than put in
+a few items for an afternoon picnic:
+
+```py noLineNumbers
+>>> wood_basket = PicnicBasket("blanket", "lemonade" ,"sandwiches",)
+>>> for item in wood_basket:
+...     print(item)
+...
+blanket
+lemonade
+sandwiches
+```
+
+Now our `wood_basket` is an iterable object (an iterable but not an iterator)
+and therefore it can be used inside the `for` statement.
+
+### Conclusion
+
+In this article we've distinguishing between itearbles, objects with `__iter__`
+or `__getitem__` dunder methods, and iterators which are objects that implement
+the iterator protocol. In the context of object-oriented programming we've
+implemented classes that create iterators and talked about the concept of lazy
+evaluation.
+
+Generator functions provide a simple framework for creating iterators called
+generators. Instead of implementing iterator protocol inside a class it's
+easier and more readable to control the state of a generator with the `yield`
+statement. Additionally, we're able to create anonymous generators using
+generator expressions.
+
+The last OOP example is only one of many where generators are handy. Now when
+you have the right tools and knowledge about iterables, iterators, and
+generators try to discover others!
+
+After this article I'd strongly encourage reading [Revisiting the Mechanism
+Behind the `for` Statement] [for_loop_mechanism] because this article explains
+how the `for` statement uses the concepts you've learned here to iterate over
+iterable objects.
+
+[for_loop_mechanism]: https://mylette.rs/revisiting-the-mechanism-behind-the-for-statement
+
+[repeat]: https://docs.python.org/3/library/itertools.html#itertools.repeat
+
+[^1]: Lazy evaluation in Python is limited to iterators and is very different
+from the lazy evaluation used in Haskell. Lazy evaluation in Haskell is
+a-whole-nother-level of lazy and amazing!
+
+[^2]: `gen1 = ("Why?" for _ in itertools.count())` and `gen2 = (i for i in
+itertools.repeat("Why?"))`.
