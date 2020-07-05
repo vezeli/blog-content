@@ -2,7 +2,7 @@
 title: "Revisiting the Mechanism Behind the `for` Statement"
 date: 2020-06-09
 tags: 
-  - Python
+  - python
 ---
 
 In Python the `for` statement is an important tool used for specifying
@@ -18,7 +18,7 @@ inside objects. The most obvious way for a C programmer to iterate
 over an object in Python is the following:
 
 ```py noLineNumbers
->>> planets = ("Mercury", "Venus", "Earth", "Mars", )
+>>> planets = ("Mercury", "Venus", "Earth", "Mars",)
 >>> for i in range(len(planets)):
 ...     print(planets[i])
 ...
@@ -45,7 +45,7 @@ reason, Python provides a better way to iterate over objects.
 Let's rewrite the previous code block in a more Pythonic way:
 
 ```py noLineNumbers
->>> planets = ("Mercury", "Venus", "Earth", "Mars", )
+>>> planets = ("Mercury", "Venus", "Earth", "Mars",)
 >>> for planet in planets:
 ...    print(planet)
 ...
@@ -110,7 +110,7 @@ function and pass the object as an argument. Here's an example of passing an
 object of type `list` as an argument inside the `iter` function:
 
 ```py noLineNumbers
->>> planets = ("Mercury", "Venus", "Earth", "Mars", )
+>>> planets = ("Mercury", "Venus", "Earth", "Mars",)
 >>> iter(planets)
 <tuple_iterator object at 0x7f83e198bbe0>
 ```
@@ -155,7 +155,7 @@ rewrite the example with `planets` and expose the mechanism behind the `for`
 statement:
 
 ```py noLineNumbers
->>> planets = ("Mercury", "Venus", "Earth", "Mars", )
+>>> planets = ("Mercury", "Venus", "Earth", "Mars",)
 >>> iplanets = iter(planets)
 >>> while True:
 ...     try:
@@ -188,7 +188,7 @@ mechanism need to be slightly modified in order to support the `else` clause.
 Here's how the code looks with the `else` clause:
 
 ```py noLineNumbers
->>> planets = ("Mercury", "Venus", "Earth", "Mars", )
+>>> planets = ("Mercury", "Venus", "Earth", "Mars",)
 >>> iplanets = iter(planets)
 >>> _loop = True
 >>> while _loop:
@@ -220,7 +220,7 @@ the `break` statement in the loop of the code and test if the `else` clause
 runs:
 
 ```py  noLineNumbers
->>> planets = ("Mercury", "Venus", "Earth", "Mars", )
+>>> planets = ("Mercury", "Venus", "Earth", "Mars",)
 >>> iplanets = iter(planets)
 >>> _loop = True
 >>> while _loop:
