@@ -19,7 +19,7 @@ in OOP.
 
 All examples in this article require a version of Python > 3.3 with an
 exception of a few examples that use the walrus operator (`:=`) which is only
-available in Python version > 3.8. 
+available in Python version > 3.8.
 
 ### Iterator Objects: The Iterator Protocol
 
@@ -40,9 +40,9 @@ to iterate over its elements. We'd expect that in the first iteration Python
 finds `0`, in the second iteration `1`, and in the third iteration `2`.  After
 iterating over the last element we'd expect from Python to stop the iteration
 process. This logics behind the iteration is prepared by the `t.__iter__` method
-and it's called _iterator object_ (or iterator for short). 
+and it's called _iterator object_ (or iterator for short).
 
-Here's the code for our previous example: 
+Here's the code for our previous example:
 
 ```py noLineNumbers
 >>> t = (0, 1, 2,)
@@ -125,7 +125,7 @@ Traceback (most recent call last):
 StopIteration
 ```
 
-Notice that the only way to interact with a iterator is to make it produce a
+Notice that the only way to interact with an iterator is to make it produce a
 new value using the `next` function. Because of their simplicity iterators are
 very fast and memory efficient and therefore they are used in many places in
 Python where performance is important. Article called [Revisiting the Mechanism
@@ -133,7 +133,7 @@ Behind the `for` Statement] [for_loop_mechanism] explains how iterators are
 used for iteration inside the `for` loop.
 
 Next, we'll implement the iterator protocol inside a class which we'll use to
-create iterator objects. There, we'll show how iterators work internally. 
+create iterator objects. There, we'll show how iterators work internally.
 
 #### Implementing an Iterator Object That Counts Backwards
 
@@ -162,7 +162,7 @@ class Countdown:
 
 Internal state of the class is kept inside `self._count`. This variable updates
 only when the `__next__` method is called by the `next` function. Therefore, a
-starting underscore in the name indicates that this is a private variable. 
+starting underscore in the name indicates that this is a private variable.
 
 `Countdown` class has three key features:
 
@@ -498,7 +498,7 @@ def filter_from(words, f):
     c = 0
     for total, w in enumerate(words, start=1):
         if f(w):
-            c += 1 
+            c += 1
             yield w
     return Stat(total, c, total-c)
 ```
@@ -661,10 +661,10 @@ This means that instances of this class are going to be iterable objects:
 ```py
 class PicnicBasket:
     def __init__(self, *content):
-        self.content = content 
+        self._content = content
 
     def __iter__(self):
-        for item in self.content:
+        for item in self._content:
             yield item
 ```
 
@@ -679,10 +679,10 @@ Using generator expressions its possible to rewrite `PicnicBasket.__iter__` meth
 ```py noLineNumbers
 class PicnicBasket:
     def __init__(self, *content):
-        self.content = content
+        self._content = content
 
     def __iter__(self):
-        return (item for item in self.content)
+        return (item for item in self._content)
 ```
 
 This example clearly shows that the `__iter__` method returns a generator.
@@ -701,8 +701,8 @@ lemonade
 sandwiches
 ```
 
-Now our `wood_basket` is an iterable object (an iterable but not an iterator)
-and therefore it can be used inside the `for` statement.
+Now our `wood_basket` is an iterable object (iterable but not iterator) and
+therefore it can be used inside the `for` statement.
 
 ### Conclusion
 
@@ -722,10 +722,10 @@ The last OOP example is only one of many where generators are handy. Now when
 you have the right tools and knowledge about iterables, iterators, and
 generators try to discover others!
 
-After this article I'd strongly encourage reading [Revisiting the Mechanism
-Behind the `for` Statement] [for_loop_mechanism] because this article explains
-how the `for` statement uses the concepts you've learned here to iterate over
-iterable objects.
+If your looking for other examples where iterators are used in Python I'd
+suggest reading [Revisiting the Mechanism Behind the `for` Statement]
+[for_loop_mechanism]. That article explains how the `for` statement relies on
+the iterator protocol for iterating over iterable objects.
 
 [for_loop_mechanism]: https://mylette.rs/revisiting-the-mechanism-behind-the-for-statement
 
