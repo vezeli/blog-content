@@ -1,10 +1,10 @@
 # mylette.rs
 
-The repository holds everything needed for building [myletters](mylette.rs)
-website.
+The repository holds everything needed for building
+[myletters](https://mylette.rs) website.
 
 The website started from the
-[`gatsby-starter-minimal-blog`](https://www.gatsbyjs.org/starters/LekoArts/gatsby-starter-minimal-blog/)
+[gatsby-starter-minimal-blog](https://www.gatsbyjs.org/starters/LekoArts/gatsby-starter-minimal-blog/)
 starter which is built on top of a Gatsby theme.
 
 ## 🚀 Installation
