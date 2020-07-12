@@ -1,28 +1,11 @@
 # mylette.rs
 
-The repository holds everything needed for building [mylette.rs](mylette.rs)
+The repository holds everything needed for building [myletters](mylette.rs)
 website.
 
 The website started from the
 [`gatsby-starter-minimal-blog`](https://www.gatsbyjs.org/starters/LekoArts/gatsby-starter-minimal-blog/)
 starter which is built on top of a Gatsby theme.
-
-## ✨ Theme Features
-
-- MDX
-- Fully customizable through the usage of Gatsby Themes (and Theme UI)
-- Light Mode / Dark Mode
-- Typography driven, minimal style
-- Tags/Categories support
-- Code highlighting with
-  [prism-react-renderer](https://github.com/FormidableLabs/prism-react-renderer)
-  and [react-live](https://github.com/FormidableLabs/react-live) support. Also
-  allows adding line numbers, line highlighting, language tabs, and file
-  titles.
-- RSS Feed for blog posts
-- Google Analytics Support
-- SEO (Sitemap, OpenGraph tags, Twitter tags)
-- Offline Support & WebApp Manifest
 
 ## 🚀 Installation
 
@@ -52,23 +35,45 @@ gatsby develop
 
 Your site is now running at `http://localhost:8000`!
 
-If you want to learn more about how you can use a Gatsby starter that is configured with a Gatsby theme, you can checkout this [shorter](https://www.gatsbyjs.org/docs/themes/using-a-gatsby-theme/) or [longer](https://www.gatsbyjs.org/tutorial/using-a-theme/) tutorial. The tutorials don't exactly apply to this starter however the concepts are the same.
+If you want to learn more about how you can use a Gatsby starter that is
+configured with a Gatsby theme, you can checkout this
+[shorter](https://www.gatsbyjs.org/docs/themes/using-a-gatsby-theme/) or
+[longer](https://www.gatsbyjs.org/tutorial/using-a-theme/) tutorial. The
+tutorials don't exactly apply to this starter however the concepts are the
+same.
 
-##  Development
+## 📝 Development
 
-**Important Note:** Please read the guide [Shadowing in Gatsby Themes](https://www.gatsbyjs.org/docs/themes/shadowing/) to understand how to customize the underlying theme!
+**Important Note:** Please read the guide [Shadowing in Gatsby
+Themes](https://www.gatsbyjs.org/docs/themes/shadowing/) to understand how to
+customize the underlying theme!
 
-This starter creates a new Gatsby site that installs and configures the theme [`@lekoarts/gatsby-theme-minimal-blog`](https://github.com/LekoArts/gatsby-themes/tree/master/themes/gatsby-theme-minimal-blog).
+This starter creates a new Gatsby site that installs and configures the theme
+[`@lekoarts/gatsby-theme-minimal-blog`](https://github.com/LekoArts/gatsby-themes/tree/master/themes/gatsby-theme-minimal-blog).
 
-Have a look at the theme's README and files to see what options are available and how you can shadow the various components including Theme UI. Generally speaking you will want to place your files into `src/@lekoarts/gatsby-theme-minimal-blog/` to shadow/override files. The Theme UI config can be configured by shadowing its files in `src/gatsby-plugin-theme-ui/`.
+Have a look at the theme's README and files to see what options are available
+and how you can shadow the various components including Theme UI. Generally
+speaking you will want to place your files into
+`src/@lekoarts/gatsby-theme-minimal-blog/` to shadow/override files. The Theme
+UI config can be configured by shadowing its files in
+`src/gatsby-plugin-theme-ui/`.
 
-### 📝 Writing content
+### Writing content
 
-Since the underlying theme ships with [prism-react-renderer](https://github.com/FormidableLabs/prism-react-renderer) and [react-live](https://github.com/FormidableLabs/react-live) certain additional features were added to code blocks. You can find an overview / usage example in the [example repository](https://github.com/LekoArts/gatsby-themes/tree/master/examples/minimal-blog/content/posts/fantastic-beasts-and-where-to-find-them/index.mdx)! If you want to change certain code styles or add additional language tabs, you need to shadow the file `src/@lekoarts/gatsby-theme-minimal-blog/styles/code.js`.
+Since the underlying theme ships with
+[prism-react-renderer](https://github.com/FormidableLabs/prism-react-renderer)
+and [react-live](https://github.com/FormidableLabs/react-live) certain
+additional features were added to code blocks. You can find an overview / usage
+example in the [example
+repository](https://github.com/LekoArts/gatsby-themes/tree/master/examples/minimal-blog/content/posts/fantastic-beasts-and-where-to-find-them/index.mdx)!
+If you want to change certain code styles or add additional language tabs, you
+need to shadow the file
+`src/@lekoarts/gatsby-theme-minimal-blog/styles/code.js`.
 
 **Language tabs:**
 
-When you add a language (such as e.g. `js` or `javascript`) to the code block, a little tab will appear at the top left corner.
+When you add a language (such as e.g. `js` or `javascript`) to the code block,
+a little tab will appear at the top left corner.
 
 ````
 ```js
@@ -157,13 +162,18 @@ banner: ./defence-against-the-dark-arts.jpg
 ---
 ```
 
-**The fields `description` and `banner` are optional!** If no description is provided, an excerpt of the blog post will be used. If no banner is provided, the default `siteImage` (from `siteMetadata`) is used.
+**The fields `description` and `banner` are optional!** If no description is
+provided, an excerpt of the blog post will be used. If no banner is provided,
+the default `siteImage` (from `siteMetadata`) is used.
 
 The `date` field has to be written in the format `YYYY-MM-DD`!
 
 #### Adding a new page
 
-Additional pages can be created by placing MDX files inside `contents/pages`, e.g. an "About" or "Contact" page. You'll manually need to link to those pages, for example by adding them to the navigation (in `navigation` option of the theme). General instructions:
+Additional pages can be created by placing MDX files inside `contents/pages`,
+e.g. an "About" or "Contact" page. You'll manually need to link to those pages,
+for example by adding them to the navigation (in `navigation` option of the
+theme). General instructions:
 
 1. Create a new folder inside `content/pages`
 1. Create a new `index.mdx` file, and add the frontmatter
@@ -181,13 +191,13 @@ slug: "/about"
 
 #### Changing the "Hero" text
 
-To change the text at the landing page edit the contents of
-`src/@lekoarts/gatsby-theme-minimal-blog/texts/hero.mdx`.
+Edit `src/@lekoarts/gatsby-theme-minimal-blog/texts/hero.mdx` to change the
+landing-page text.
 
 #### Changing the "Projects" part
 
-To change the projects part below "Latest posts", edit the contents of
-`src/@lekoarts/gatsby-theme-minimal-blog/texts/bottom.mdx`.
+Edit `src/@lekoarts/gatsby-theme-minimal-blog/texts/bottom.mdx` to change the
+projects part below "Latest posts".
 
 ### Change your `static` folder
 
