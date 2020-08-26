@@ -342,12 +342,12 @@ StopIteration
 These are similar to the tests used to show that iterators support the iterator
 protocol.
 
-A generator instance with `__iter__` and `__next__` methods is creates after
+A generator instance with `__iter__` and `__next__` methods is created after
 calling a generator function. The `iter` function called on a generator returns
 the same generator instance. Additionally, calling the `next` function
-activates generators and executes the body of generator function until the next
-`yield` statement is reached and produces the value which follows the
-statement. Once it produces a value generator suspends and waits for next
+activates generators and executes the body of the generator function until the
+next `yield` statement is reached and produces the value which follows the
+statement. Once it produces a value generator suspends and waits for the next
 activation with the `next` function. When there are no more `yield` statements
 in the function body generator gets exhausted and raises the `StopIteratation`
 exception.
@@ -674,7 +674,8 @@ that it returns `None` once its generator is exhausted.
 
 #### Generator Expression
 
-Using generator expressions its possible to rewrite `PicnicBasket.__iter__` method:
+Using generator expressions it's possible to rewrite `PicnicBasket.__iter__`
+method:
 
 ```py noLineNumbers
 class PicnicBasket:
@@ -706,7 +707,7 @@ therefore it can be used inside the `for` statement.
 
 ### Conclusion
 
-In this article we've distinguishing between itearbles, objects with `__iter__`
+In this article we've distinguished between itearbles, objects with `__iter__`
 or `__getitem__` dunder methods, and iterators which are objects that implement
 the iterator protocol. In the context of object-oriented programming we've
 implemented classes that create iterators and talked about the concept of lazy
