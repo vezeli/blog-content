@@ -1,0 +1,380 @@
+---
+title: "Recursive Generators"
+date: 2020-08-10
+tags: 
+  - python
+  - iterators
+  - functional programming
+---
+
+This article provides alternative ways to implement `count`, `cycle` and
+`repeat` generator functions that are a part of the `itertools` module in the
+Python Standard Library (PSL). The proposed solutions are based on the
+principle of _functional recursion_ and are similar to design patterns used in
+functional programming. The main message of the article is, however, not to
+propose potential improvements to the PSL but to challenge programmers and open
+them to a new way of thinking about iterators. It also goes to show that in the
+context of iterators the idea of functional recursion comes naturally with the
+use of the `yield from` statement. Hence, it's very unfortunate that Python
+doesn't have better support for recursion.
+
+### Recursive Generators 101
+
+Generator functions are specific functions that contain `yield` or `yield from`
+statements inside their function body. Unlike regular functions, generator
+functions return generator objects when they are called. If you feel that you
+would like to brush up your knowledge about generators take a look at my other
+article called [Going Over Iterators and
+Generators](https://mylette.rs/going-over-iterators-and-generators).
+
+*Recursive generator functions* are a subset of regular generator functions.
+More specifically, recursive generator function is defined by calling itself
+inside the body of the same generator function. The main problem for achieving
+recursion with generator functions is the fact that they return a generator
+instance which awaits for the `next` built-in function to call it in order to
+produce a value. This behaviour obviously hinders recursion.  Therefore,
+calling a generator function returns a generator that needs to be unpacked in
+order to establish recursion. We'll see that in Python this can be achieved
+using the `yield from` statement.
+
+The following subsection introduces the concept of the `yield from` statement
+which is essential for unpacking iterators (generators). Afterwards, we'll use
+it to establish recursive iteration in recursive generator functions.
+
+##### The `yield from` Statement: The Unpacking Mechanism
+
+The `yield from` statement was introduced to delegate subgenerators in the
+context of coroutines (see [PEP
+380](https://www.python.org/dev/peps/pep-0380/)). However, when it's used in
+the context of simple generators (non-coroutine objects) its usage becomes
+simple. Therefore, for the purpose of this article consider the `yield from`
+statement as a way to unpack iterable objects (objects with `__iter__` or
+`__getitem__` dunder methods) until they raise the `StopIteration` exception at
+which point the unpacking stops. Consider the following generator function:
+
+```py
+def unpack(iterable):
+    yield from iterable
+```
+
+As long as we make sure not to pass a coroutine as function argument, the above
+generator function behaves the same as the following:
+
+```py
+def unpack_(iterable):
+    for i in iterable:
+        yield i
+```
+
+Both `unpack` and `unpack_` are generator functions that accept a single
+argument and return a generator. To show that the functions produce the same
+results the following example unpacks a tuple and save it in a list:
+
+```py noLineNumbers
+>>> c = (1, 2, 3,)
+>>> list(unpack(c))
+[1, 2, 3]
+>>> list(unpack_(c))
+[1, 2, 3]
+```
+
+Now let's create an iterator and pass it to the `yield from`:
+
+```py noLineNumbers
+>>> i = iter(c)
+>>> list(unpack(i))
+[1, 2, 3]
+```
+
+This shows that the behaviour of the `yield_from` statement is the same for
+containers (`tuple`, `list`, `range`) and iterable objects. The `yield from`
+statement provides a simple framework for unpacking iterable objects until the
+`StopIteration` exception signals to stop unpacking. 
+
+##### Recursive Generators: The Matriyoshka Example
+
+In the following example we'll look at the recursive nature of the [Matriyoshka
+doll](https://en.wikipedia.org/wiki/Matryoshka_doll) and create a recursive
+generator function that unpacks the doll.
+
+We'll use `NamedTuple` type to model the doll and specify the size of the doll
+in the field called `size`. This field reflects the number of dolls that the
+original holds inside of it. The smallest doll has has the `size` field equal
+to zero (i.e., it doesn't contain other dolls). Here's the model for a
+matriyoshka doll:
+
+```py
+from typing import NamedTuple
+
+
+class Matriyoshka(NamedTuple):
+    size: int
+```
+
+For example `Matriyoshka(size=2)` is an object that models a doll that has two
+dolls inside it, namely `Matriyoshka(size=1)` and `Matriyoshka(size=0)`
+objects. Note that with the relationship between the objects is weak in the
+sense that the original doll only has a larger size but doesn't explicitly
+enclose the smaller dolls.
+
+Let's create a recursive generator function which recursively opens each doll
+until the smallest doll is reached (i.e., doll that has `size` equal to zero):
+
+```py
+from typing import Iterator
+
+
+def open_matriyoshka(m: Matriyoshka) -> Iterator[Matriyoshka]:
+    yield m
+    if m.size > 0:
+        yield from open_matriyoshka(m._make([m.size - 1]))
+```
+
+This function is a recursive generator function because it calls itself inside
+of the function body. When the generator function is called with one argument
+it returns a generator object. Generator objects are iterable and therefore
+interact nicely with the `yield from` statement. The `yield from` statement
+unpacks the generator which is created by calling `open_matriyoshka` with a
+doll of decremented size as a function argument. The decrementing ensures that
+the doll size becomes smaller. The recursive iteration continues until the
+*base case for recursion* is reached (i.e., until the algorithm decrements the
+doll size sufficiently many times to reach the smallest doll with the `size`
+field equal to zero). Once the base case is reached the recursion stops.
+
+Let's test our recursive generator function and show that it can be used to
+unpack `Matriyoshka` objects:
+
+```py
+>>> next(g := open_matriyoshka(Matriyoshka(size=2)))
+Matriyoshka(size=2)
+>>> next(g)
+Matriyoshka(size=1)
+>>> next(g)
+Matriyoshka(size=0)
+>>> next(g)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+StopIteration
+```
+
+Generator `g` is created after calling `open_matriyoshka` with an argument
+`Matriyoshka(size=2)`, i.e., object that represents a doll which has two dolls
+inside it. Each time the `next` built-in function is called on the generator
+`g` the code inside the generator function runs until the next `yield`
+statement and produces a value which follows it. When the code reaches the
+`yield from` statement it creates a new generator and continues searching for
+the next `yield` statement inside it. When there are no more `yield` statements
+the original generator `g` is exhausted and the `StopIteration` exception is
+raised.
+
+In the following section we'll use the recursive mechanism to rewrite three
+functions from the `itertools` module.
+
+### Reimplementing `count`, `cycle` and `repeat` Functions
+
+`count`, `cycle` and `repeat` are iterator factories defined in the `itertools`
+module that are used for creating well-optimized iterators that are both fast
+and memory efficient. The functions are implemented in C programming language
+and live inside the
+[itertoolsmodule.c](https://github.com/python/cpython/blob/384621c42f9102e31ba2c47feba144af09c989e5/Modules/itertoolsmodule.c)
+file. For the sake of completeness every function from the module has an
+equivalent Python implementation which complements the
+[documentation](https://docs.python.org/3/library/itertools.html#itertools.cycle)
+of the module. Before reimplementing these functions we'll cover the basic use
+cases and the way they are implemented according to the Python documentation:
+
+- `count` creates an infinite counter `>>> count(10) --> 10 11 12
+  13 14 ...`
+
+```py {3-5}
+def count(start=0, step=1):
+    n = start
+    while True:
+        yield n
+        n += step
+```
+
+- `cycle` indefinitely cycles over an iterable object `>>> cycle("ABC") --> A B C A B C A ...`
+
+```py {6-8}
+def cycle(iterable):
+    saved = []
+    for element in iterable:
+        yield element
+        saved.append(element)
+    while saved:
+        for element in saved:
+            yield element
+```
+
+- `repeat` repeats an object infinitely or finite number of times `>>>
+  repeat(10, 3) --> 10 10 10`
+
+```py {3,4}
+def repeat(object, times=None):
+    if times is None:
+        while True:
+            yield object
+    else:
+        for i in range(times):
+            yield object
+```
+
+Note that these functions share the same design pattern. They instantiate
+infinite iterators by dropping into an infinite `while` loop (highlighted lines
+in the above code examples). This ensures that the iterators always have a
+`yield` statement that produces a new value and that the iterator is unable to
+raise the `StopIteration` exception (i.e., to get exhausted). This particular
+design, using an infinite `while` loop, is an obvious solution that a lot of
+programmers in the context of imperative programming are comfortable with.
+
+Next we'll put on our "functional-programming" hats and reimplement these
+functions in the form of previously introduced recursive generator functions.
+
+##### Recursive `count` Function
+
+The `count` function is probably the simplest one to implement:
+
+```py
+from typing import Union
+
+Number = Union[int, float]
+
+
+def recount(x: Number, step: Number = 1) -> Number:
+    yield x
+    yield from recount(x + step, step)
+```
+
+When this generator function is called it creates a generator object. The
+generator simply yields the first argument that is passed when the generator
+function is called. Then it creates a new generator with an incremented value.
+The new generator is unpacked using the `yield from` statement. The code
+continues to search through the newly created generator for the next `yield`
+statement. That way new values are being produced. Each time a new value is
+produces a new generators with an incremented value is created. Here's an
+example:
+
+```py noLineNumbers
+>>> r = recount(10, 2)
+>>> next(r)
+10
+>>> next(r)
+12
+>>> next(r)
+14
+>>> next(r)
+16
+```
+
+We'll use the same idea to reimplement the `cycle` and `repeat` functions.
+First the generator needs to yield a value and than it recursively creates a
+new generator which gets unpacked.
+
+##### Recursive `cycle` Function
+
+Looking at the `cycle` function you'll notice that there is a quirk. Before
+`cycle` drops into the infinite loop it saves elements from the iterable into a
+`list` type object. This ensures that the iterable over which the code cycles
+doesn't get exhausted. This is not needed for container-type objects (e.g.,
+`list`, `tuple`, `range`) but is important for iterators and generators since
+they get exhausted once there are no more `yield` statements to produce new
+values. To create recursive generator function we'll use a similar trick and
+make a copy of the iterator. The idea is to exhaust one iterator copy and use
+the other as input for the recursive generator function:
+
+```py
+from itertools import tee
+from typing import Iterable
+
+
+def recycle(iterable: Iterable) -> Iterable:
+    i, i_copy = tee(iterable)
+    yield from i_copy
+    yield from recycle(i)
+```
+
+If the function didn't create a copy it would have only worked for
+container-type objects. This implementation, however, is able to infinitely
+cycle over any iterable object. We can test this by combining two recursive
+generator functions:
+
+```py noLineNumbers
+>>> g = recycle(open_matriyoshka(Matriyoshka(size=2)))
+>>> next(g)
+Matriyoshka(size=2)
+>>> next(g)
+Matriyoshka(size=1)
+>>> next(g)
+Matriyoshka(size=0)
+>>> next(g)
+Matriyoshka(size=2)
+```
+
+On the downside this recursive generator function comes with a performance
+overhead because it makes a copy of the iterable each time it enters a new
+cycle.
+
+##### Recursive `repeat` Function
+
+Examples of `recount` and `recycle` have shown how to create infinite recursive
+generators. Reimplementation of `repeat` poses a new problem. Since `repeat`
+can create finite iterators the recursive generator function requires a base
+case to stop the recursion. Take a look at the following implementation:
+
+```py
+from typing import Iterator, TypeVar
+
+T = TypeVar('T')
+
+
+def rerepeat(x: T, times: int = 0) -> Iterator[T]:
+    yield x
+    if (new_times := times - 1) != 0:
+        yield from rerepeat(x, new_times)
+```
+
+Generators created by calling `rerepeat` yield the first argument used during
+the function call. Afterwards the `times` argument gets decremented. For the
+generators with positive `times` the decrementing means that the value becomes
+closer to one. When `times` becomes one the base case is reached. The `if`
+statement doesn't activate and the generator stops unpacking new generators.
+However, for the generators with negative `times` (or zero) the decrementing
+leads to even smaller numbers which drive it away from the base case.
+Consequently, the generator with `times` lower or equal to zero are infinite
+generators.
+
+Here's a taste of what we can do with the `rerepeat` function:
+
+```py noLineNumbers
+>>> '-'.join(rerepeat("NANA", 8)) + " BATMAN!"
+'NANA-NANA-NANA-NANA-NANA-NANA-NANA-NANA BATMAN!'
+```
+
+This works only because the `times` argument is positive and the iterator is
+finite. However, testing the same example with an infinite iterator would blow
+up in our face!
+
+### Discussion
+
+The concept of functional recursion is applicable in the context of iterators
+and results in the so-called *recursive generator functions*.  We've shown that
+functional recursion is a natural approach for creating both finite and
+infinite iterators using the simplest use case of the `yield from` statement.
+It provides the *unpacking mechanism* for iterable objects and establishes the
+flow of recursive iteration. This circumvents the need for loops in generator
+functions.
+
+We've used the concept of functional recursion to reimplemented pure functions
+from the `itertools` module. These exercises have shown how to set base case
+for recursion. While implementing the `recycle` function it was pointed out
+that container-type objects, unlike iterators, cannot be exhausted. Therefore,
+careful consideration has to be made to reflect the use case when designing a
+recursive generator function.
+
+It is well-known that recursion in Python is a crippled tool since it builds on
+top of the C stack. This is very unfortunate because it limits the application
+of recursive generator function. Until the problem with recursion gets solved
+recursive generator will only be a mental exercise aimed to help programmers
+expand their way of thinking in terms of tools that are used in functional
+programming.
