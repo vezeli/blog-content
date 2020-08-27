@@ -1,6 +1,6 @@
 ---
 title: "Recursive Generators"
-date: 2020-08-10
+date: 2020-08-26
 tags: 
   - python
   - iterators
@@ -144,7 +144,7 @@ field equal to zero). Once the base case is reached the recursion stops.
 Let's test our recursive generator function and show that it can be used to
 unpack `Matriyoshka` objects:
 
-```py
+```py noLineNumbers
 >>> next(g := open_matriyoshka(Matriyoshka(size=2)))
 Matriyoshka(size=2)
 >>> next(g)
